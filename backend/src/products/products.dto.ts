@@ -19,6 +19,7 @@ export class CreateProductDto {
   @IsOptional() @IsInt() @Min(2) bulkMinQty?: number;
   @IsOptional() @IsNumber() @IsPositive() bulkPrice?: number;
   @IsOptional() @IsUrl() imageUrl?: string;
+  @IsOptional() @IsString() @MaxLength(255) imagePublicId?: string;
   @IsInt() categoryId: number;
   @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => VariantDto) variants: VariantDto[];
 }

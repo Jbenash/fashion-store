@@ -9,6 +9,7 @@ import { CategoriesModule } from './categories/categories.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { SeedModule } from './seed/seed.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { SeedModule } from './seed/seed.module.js';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
 
     //feature modules
-    UsersModule, AuthModule, CategoriesModule, ProductsModule, OrdersModule, SeedModule,
+    UsersModule, AuthModule, CategoriesModule, ProductsModule, OrdersModule, SeedModule, UploadsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

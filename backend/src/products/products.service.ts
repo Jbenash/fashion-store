@@ -5,12 +5,14 @@ import { Product } from './products.entity.js';
 import { ProductVariant } from './varients.entity.js';
 import { Category } from '../categories/categories.entity.js';
 import { CreateProductDto, ProductQueryDto, UpdateProductDto } from './products.dto.js';
+import { CloudinaryService } from '../uploads/cloudinary.service.js';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectRepository(Product) private repo: Repository<Product>,
     @InjectRepository(ProductVariant) private variantRepo: Repository<ProductVariant>,
+    private cloudinary: CloudinaryService,
   ) {}
 
   findAll(q: ProductQueryDto) {
@@ -56,6 +58,14 @@ export class ProductsService {
   async update(id: number, dto: UpdateProductDto) {
     const product = await this.findOne(id, true);
     const { categoryId, variants, ...rest } = dto;
+
+    // If the image is being replaced or cleared, remember the outgoing asset so
+    // it can be removed from Cloudinary once the row is safely saved.
+    const previousPublicId =
+      'imagePublicId' in rest && rest.imagePublicId !== product.imagePublicId
+        ? product.imagePublicId
+        : null;
+
     Object.assign(product, rest);
     if (categoryId) product.category = { id: categoryId } as Category;
     // variants are updated or added, never deleted, because past orders reference them; set stock to 0 instead
@@ -64,7 +74,12 @@ export class ProductsService {
       if (existing) Object.assign(existing, v);
       else product.variants.push(this.variantRepo.create(v));
     }
-    return this.repo.save(product);
+
+    const saved = await this.repo.save(product);
+    // Only after the new URL is committed, so a failed save never deletes a
+    // still-referenced image.
+    if (previousPublicId) await this.cloudinary.destroy(previousPublicId);
+    return saved;
   }
 
   async deactivate(id: number) {

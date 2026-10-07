@@ -12,6 +12,9 @@ export class Product {
   @Column('int', { nullable: true }) bulkMinQty: number | null;
   @Column('decimal', { precision: 10, scale: 2, nullable: true, transformer: decimal }) bulkPrice: number | null;
   @Column({ type: 'varchar', nullable: true }) imageUrl: string | null;
+  // Cloudinary asset id behind imageUrl, kept so a replaced image can be
+  // deleted instead of orphaned. Null for externally hosted URLs.
+  @Column({ type: 'varchar', nullable: true }) imagePublicId: string | null;
   @Column({ default: true }) isActive: boolean;
   @ManyToOne(() => Category, { nullable: false, eager: true }) category: Category;
   @OneToMany(() => ProductVariant, (v) => v.product, { cascade: true, eager: true }) variants: ProductVariant[];

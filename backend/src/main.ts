@@ -9,7 +9,25 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   app.use(helmet());
-  app.enableCors({ origin : process.env.FRONTEND_URL });
+
+  // FRONTEND_URL stays a single origin because PayHere's return/cancel URLs are
+  // built from it. In development we additionally accept any localhost port,
+  // since Vite moves to 5174+ whenever 5173 is already taken. Production keeps
+  // the strict allowlist.
+  const allowed = process.env.FRONTEND_URL;
+  const isProd = process.env.NODE_ENV === 'production';
+  app.enableCors({
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || origin === allowed) return callback(null, true);
+      if (!isProd && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+  });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe ({ whitelist: true, forbidNonWhitelisted: true , transform: true}))
   

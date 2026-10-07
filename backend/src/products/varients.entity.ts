@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, type Relation, Unique } from 'typeorm';
 import { Product } from './products.entity.js';
 
 @Entity('product_variants')
@@ -8,5 +8,5 @@ export class ProductVariant {
   @Column() size: string;
   @Column() colour: string;
   @Column('int', { default: 0 }) stock: number;
-  @ManyToOne(() => Product, (p) => p.variants, { onDelete: 'CASCADE' }) product: Product;
+  @ManyToOne(() => Product, (p) => p.variants, { onDelete: 'CASCADE' }) product: Relation<Product>;
 }
