@@ -12,8 +12,14 @@ import type {
   UploadSignature,
 } from './types';
 
-const BASE_URL: string =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+/**
+ * Base URL of the API, including its /api prefix.
+ * Trailing slashes are stripped because every path below starts with one, and
+ * `https://host//products` is a different route to `https://host/products`.
+ */
+const BASE_URL: string = (
+  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
+).replace(/\/+$/, '');
 
 const TOKEN_KEY = 'atelier.token';
 
@@ -93,7 +99,23 @@ async function request<T>(
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const body: unknown = text ? JSON.parse(text) : null;
+
+  // A misconfigured VITE_API_URL points at something that answers with an HTML
+  // error page, and JSON.parse then fails with the opaque
+  // "Unexpected token '<'". Say what actually went wrong instead.
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      throw new ApiError(
+        res.status,
+        res.ok
+          ? `The API returned a non-JSON response. Is VITE_API_URL (${BASE_URL}) pointing at the API, including its /api prefix?`
+          : `The API returned ${res.status} and a non-JSON response. Check that VITE_API_URL (${BASE_URL}) includes the /api prefix.`,
+      );
+    }
+  }
 
   if (!res.ok) throw new ApiError(res.status, readError(body, res.status));
   return body as T;

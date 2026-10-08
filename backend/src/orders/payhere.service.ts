@@ -45,6 +45,11 @@ export class PayhereService {
   }
 
   verifyNotification(b: Record<string, string>) {
+    // This endpoint is public, so it receives junk as well as real callbacks.
+    // Without this guard an empty POST dereferences undefined and surfaces as
+    // a 500 rather than an honest "invalid signature" rejection.
+    if (!b || typeof b !== 'object' || !b.merchant_id || !b.md5sig) return false;
+
     const expected = this.md5(
       b.merchant_id + b.order_id + b.payhere_amount + b.payhere_currency + b.status_code + this.secretHash(),
     );
