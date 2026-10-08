@@ -12,8 +12,11 @@ export class PayhereService {
 
   buildCheckout(order: Order) {
     const merchantId = this.config.getOrThrow<string>('PAYHERE_MERCHANT_ID');
-    const frontend = this.config.getOrThrow<string>('FRONTEND_URL');
-    const backend = this.config.getOrThrow<string>('BACKEND_URL');
+    // Trailing slashes are easy to paste in from a browser address bar and
+    // would produce '.../app//orders/5', which the SPA host may not route.
+    const trimSlash = (u: string) => u.replace(/\/+$/, '');
+    const frontend = trimSlash(this.config.getOrThrow<string>('FRONTEND_URL'));
+    const backend = trimSlash(this.config.getOrThrow<string>('BACKEND_URL'));
     const amount = order.total.toFixed(2);
     const currency = 'LKR';
     const [firstName, ...rest] = order.customerName.trim().split(' ');
