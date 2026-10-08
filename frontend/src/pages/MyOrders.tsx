@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { errorMessage, useAsync } from '../lib/useAsync';
 import { useToast } from '../store/toast';
+import { useConfirm } from '../store/confirm';
 import { useAuth } from '../store/auth';
 import { formatDate, formatPrice, STATUS_LABEL, STATUS_TONE } from '../lib/format';
 import { Empty, ErrorBox, RowsSkeleton } from '../components/States';
@@ -12,11 +13,21 @@ export default function MyOrders() {
   const { user, logout } = useAuth();
   const { data, loading, error, reload } = useAsync(() => api.myOrders(), []);
   const toast = useToast();
+  const confirm = useConfirm();
   const [busyId, setBusyId] = useState<number | null>(null);
   const orders = data ?? [];
 
   const cancel = async (id: number) => {
-    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Cancel this order?',
+      message:
+        'The pieces go straight back into stock. This cannot be undone, and you would need to place a new order.',
+      confirmLabel: 'Cancel order',
+      cancelLabel: 'Keep it',
+      danger: true,
+    });
+    if (!ok) return;
+
     setBusyId(id);
     try {
       await api.cancelOrder(id);

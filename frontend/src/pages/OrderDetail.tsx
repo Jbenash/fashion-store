@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { errorMessage, useAsync } from '../lib/useAsync';
 import { useToast } from '../store/toast';
+import { useConfirm } from '../store/confirm';
 import {
   formatDateTime,
   formatPrice,
@@ -37,6 +38,7 @@ export default function OrderDetail() {
   // PayHere confirms server-to-server, so the status can lag the redirect by a
   // moment. Re-check a few times before telling the customer anything final.
   const toast = useToast();
+  const confirm = useConfirm();
   const [cancelling, setCancelling] = useState(false);
   const [checks, setChecks] = useState(0);
   const awaitingPayment = justPaid && order?.status === 'PENDING' && checks < 5;
@@ -235,7 +237,16 @@ export default function OrderDetail() {
                 className="btn btn-danger btn-block"
                 disabled={cancelling}
                 onClick={async () => {
-                  if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+                  const ok = await confirm({
+                    title: 'Cancel this order?',
+                    message:
+                      'The pieces go straight back into stock. This cannot be undone, and you would need to place a new order.',
+                    confirmLabel: 'Cancel order',
+                    cancelLabel: 'Keep it',
+                    danger: true,
+                  });
+                  if (!ok) return;
+
                   setCancelling(true);
                   try {
                     await api.cancelOrder(orderId);

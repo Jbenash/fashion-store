@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { errorMessage, useAsync } from '../../lib/useAsync';
 import { useToast } from '../../store/toast';
+import { useConfirm } from '../../store/confirm';
 import {
   formatDateTime,
   formatPrice,
@@ -18,6 +19,7 @@ export default function AdminOrderDetail() {
   const { id } = useParams();
   const orderId = Number(id);
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState<OrderStatus | null>(null);
 
   const { data: order, loading, error, reload } = useAsync(() => api.order(orderId), [orderId]);
@@ -41,11 +43,16 @@ export default function AdminOrderDetail() {
   const blockedConfirm = order.paymentMethod === 'PAYHERE' && order.status === 'PENDING';
 
   const move = async (status: OrderStatus) => {
-    if (
-      status === 'CANCELLED' &&
-      !window.confirm('Cancel this order? Stock will be returned to inventory.')
-    ) {
-      return;
+    if (status === 'CANCELLED') {
+      const ok = await confirm({
+        title: `Cancel order ${order.orderNumber}?`,
+        message:
+          'Every item returns to inventory and the order cannot be reopened. If the customer already paid, refund them separately — cancelling here does not move any money.',
+        confirmLabel: 'Cancel order',
+        cancelLabel: 'Go back',
+        danger: true,
+      });
+      if (!ok) return;
     }
     setBusy(status);
     try {

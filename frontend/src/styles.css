@@ -1145,6 +1145,54 @@ h3 { font-size: 1.15rem; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; }
 
+/* ---------- Modal / confirm dialog ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: rgba(22, 19, 15, 0.45);
+  backdrop-filter: blur(3px);
+  animation: fade 0.16s ease;
+}
+
+.modal {
+  width: min(440px, 100%);
+  padding: 26px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: modal-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal h3 { font-size: 1.3rem; margin-bottom: 8px; }
+
+.modal-message { color: var(--ink-soft); font-size: 14.5px; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.modal-actions .btn { flex: 1 1 auto; }
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+/* Destructive primary action — filled, unlike the outlined .btn-danger. */
+.btn-danger-solid {
+  --btn-bg: var(--danger);
+  --btn-bd: var(--danger);
+  --btn-fg: #fff;
+}
+
 /* ---------- WhatsApp hand-off ---------- */
 
 .wa-panel {
