@@ -6,9 +6,21 @@ import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from './Icons';
 
 const SHOP_LINKS = [
   { to: '/products', label: 'Shop all' },
-  { to: '/products?sort=newest', label: 'New in' },
+  // ?new=1 is a real filter (recently added only). Pointing this at
+  // ?sort=newest would render the same page as "Shop all", because newest is
+  // already the default sort.
+  { to: '/products?new=1', label: 'New in' },
   { to: '/bulk', label: 'Bulk orders' },
 ];
+
+/** "Shop all" and "New in" share a path, so the `new` flag decides between them. */
+function isShopLinkActive(to: string, location: { pathname: string; search: string }) {
+  const [path, search = ''] = to.split('?');
+  if (location.pathname !== path) return false;
+  if (path !== '/products') return true;
+  const wantsNew = new URLSearchParams(search).has('new');
+  return new URLSearchParams(location.search).has('new') === wantsNew;
+}
 
 function Header() {
   const { user, isAdmin, logout } = useAuth();
@@ -48,16 +60,15 @@ function Header() {
 
           <nav className="nav">
             {SHOP_LINKS.map((l) => (
-              <NavLink
+              <Link
                 key={l.to}
                 to={l.to}
-                end={l.to === '/products'}
-                className={({ isActive }) =>
-                  `nav-link${isActive && l.to !== '/products?sort=newest' ? ' nav-on' : ''}`
-                }
+                // NavLink ignores the query string, so "Shop all" and "New in"
+                // would both light up on /products. Compare it explicitly.
+                className={`nav-link${isShopLinkActive(l.to, location) ? ' nav-on' : ''}`}
               >
                 {l.label}
-              </NavLink>
+              </Link>
             ))}
             {isAdmin && (
               <NavLink

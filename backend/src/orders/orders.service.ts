@@ -134,7 +134,20 @@ export class OrdersService {
       : p.price;
   }
 
-  // building the whatsapp url  
+  /**
+   * Rebuilds the WhatsApp hand-off link for an order the caller may see.
+   * Exposed so the order page can offer the link again later — the customer
+   * may not have sent the message straight after checking out.
+   */
+  async whatsappLinkFor(id: number, user: { id: number; role: Role }) {
+    const order = await this.findOneForUser(id, user);
+    if (order.paymentMethod !== PaymentMethod.WHATSAPP) {
+      throw new BadRequestException('This order was not placed via WhatsApp');
+    }
+    return { url: this.buildWhatsappUrl(order) };
+  }
+
+  // building the whatsapp url
   private buildWhatsappUrl(order: Order) {
     const groups = new Map<string, string[]>();
     for (const i of order.items) {
@@ -205,6 +218,27 @@ export class OrdersService {
     if (status === OrderStatus.CANCELLED) return this.cancel(order);
     order.status = status;
     return this.repo.save(order);
+  }
+
+  /**
+   * Lets the customer who placed an order call it off themselves.
+   * Restricted to PENDING: once money has been taken (PAID) or the parcel has
+   * moved (CONFIRMED/SHIPPED), cancelling needs a refund or a courier recall,
+   * so it stays an admin decision. Admins keep the full state machine via
+   * updateStatus. findOneForUser enforces ownership and 404s otherwise.
+   */
+  async cancelOwn(id: number, user: { id: number; role: Role }) {
+    const order = await this.findOneForUser(id, user);
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('This order is already cancelled');
+    }
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        'This order can no longer be cancelled online. Please contact us.',
+      );
+    }
+    return this.cancel(order);
   }
 
   private cancel(order: Order) {

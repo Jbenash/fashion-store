@@ -33,6 +33,16 @@ export class OrdersController {
     return this.orders.findOneForUser(id, user);
   }
 
+  @Get(':id/whatsapp')
+  whatsapp(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.orders.whatsappLinkFor(id, user);
+  }
+
+  @Patch(':id/cancel')
+  cancel(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.orders.cancelOwn(id, user);
+  }
+
   @Patch(':id/status')
   @Roles(Role.ADMIN)
   updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {

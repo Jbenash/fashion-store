@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { errorMessage } from '../lib/useAsync';
+import PasswordInput from '../components/PasswordInput';
 import type { CSSProperties, FormEvent } from 'react';
 
 export default function Login() {
@@ -51,17 +52,18 @@ export default function Login() {
           />
         </label>
 
-        <label className="field">
-          <span className="label">Password</span>
-          <input
-            className="input"
-            type="password"
+        <div className="field">
+          <label className="label" htmlFor="password">
+            Password
+          </label>
+          <PasswordInput
+            id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             autoComplete="current-password"
             required
           />
-        </label>
+        </div>
 
         <button className="btn btn-lg btn-block" disabled={busy}>
           {busy ? <span className="spinner" /> : 'Sign in'}

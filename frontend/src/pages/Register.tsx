@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { errorMessage } from '../lib/useAsync';
+import PasswordInput from '../components/PasswordInput';
 import type { CSSProperties, FormEvent } from 'react';
 
 export default function Register() {
@@ -68,20 +69,22 @@ export default function Register() {
           />
         </label>
 
-        <label className="field">
-          <span className="label">Password</span>
-          <input
-            className={`input${tooShort ? ' field-error' : ''}`}
-            type="password"
+        <div className="field">
+          <label className="label" htmlFor="password">
+            Password
+          </label>
+          <PasswordInput
+            id="password"
             value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(password) => setForm({ ...form, password })}
             autoComplete="new-password"
+            invalid={tooShort}
             required
           />
           <span className={`hint${tooShort ? ' hint-error' : ''}`}>
             At least 8 characters.
           </span>
-        </label>
+        </div>
 
         <button className="btn btn-lg btn-block" disabled={busy}>
           {busy ? <span className="spinner" /> : 'Create account'}

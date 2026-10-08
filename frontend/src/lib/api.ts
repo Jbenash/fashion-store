@@ -176,6 +176,14 @@ export const api = {
 
   order: (id: number) => request<Order>(`/orders/${id}`, { auth: true }),
 
+  /** Customer-initiated cancellation; the server allows it only while PENDING. */
+  cancelOrder: (id: number) =>
+    request<Order>(`/orders/${id}/cancel`, { method: 'PATCH', auth: true }),
+
+  /** wa.me link for a WhatsApp order, rebuilt server-side on demand. */
+  orderWhatsapp: (id: number) =>
+    request<{ url: string }>(`/orders/${id}/whatsapp`, { auth: true }),
+
   allOrders: (status?: OrderStatus) =>
     request<Order[]>(`/orders${query({ status })}`, { auth: true }),
 

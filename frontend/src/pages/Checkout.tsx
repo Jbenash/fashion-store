@@ -94,9 +94,10 @@ export default function Checkout() {
       const result = await api.createOrder(body);
       clear();
 
-      if (paymentMethod === 'WHATSAPP' && result.whatsappUrl) {
-        // Opened before navigating so the tab isn't blocked as a popup.
-        window.open(result.whatsappUrl, '_blank', 'noopener');
+      if (paymentMethod === 'WHATSAPP') {
+        // Deliberately no window.open here: the await above ends the user
+        // gesture, so browsers block the popup and the message silently never
+        // opens. The order page offers a link the customer clicks instead.
         navigate(`/orders/${result.order.id}`, { replace: true });
         return;
       }

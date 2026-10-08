@@ -1,14 +1,33 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { useAsync } from '../lib/useAsync';
+import { errorMessage, useAsync } from '../lib/useAsync';
+import { useToast } from '../store/toast';
 import { useAuth } from '../store/auth';
 import { formatDate, formatPrice, STATUS_LABEL, STATUS_TONE } from '../lib/format';
 import { Empty, ErrorBox, RowsSkeleton } from '../components/States';
+import type { CSSProperties } from 'react';
 
 export default function MyOrders() {
   const { user, logout } = useAuth();
   const { data, loading, error, reload } = useAsync(() => api.myOrders(), []);
+  const toast = useToast();
+  const [busyId, setBusyId] = useState<number | null>(null);
   const orders = data ?? [];
+
+  const cancel = async (id: number) => {
+    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+    setBusyId(id);
+    try {
+      await api.cancelOrder(id);
+      toast.push('Order cancelled and stock released.', 'ok');
+      reload();
+    } catch (e) {
+      toast.push(errorMessage(e), 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="wrap page wrap-mid">
@@ -70,9 +89,21 @@ export default function MyOrders() {
                       </span>
                     </td>
                     <td className="cell-tight">
-                      <Link to={`/orders/${o.id}`} className="link-underline small">
-                        View
-                      </Link>
+                      <div className="row" style={{ '--row-gap': '8px' } as CSSProperties}>
+                        <Link to={`/orders/${o.id}`} className="link-underline small">
+                          View
+                        </Link>
+                        {o.status === 'PENDING' && (
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: 'var(--danger)' }}
+                            disabled={busyId === o.id}
+                            onClick={() => cancel(o.id)}
+                          >
+                            {busyId === o.id ? <span className="spinner" /> : 'Cancel'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

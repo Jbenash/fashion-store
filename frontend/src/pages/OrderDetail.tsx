@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
-import { useAsync } from '../lib/useAsync';
+import { errorMessage, useAsync } from '../lib/useAsync';
+import { useToast } from '../store/toast';
 import {
   formatDateTime,
   formatPrice,
@@ -10,7 +11,7 @@ import {
   STATUS_TONE,
 } from '../lib/format';
 import { ErrorBox, Loading } from '../components/States';
-import { CheckIcon } from '../components/Icons';
+import { CheckIcon, WhatsAppIcon } from '../components/Icons';
 import type { OrderStatus } from '../lib/types';
 import type { CSSProperties } from 'react';
 
@@ -24,8 +25,19 @@ export default function OrderDetail() {
 
   const { data: order, loading, error, reload } = useAsync(() => api.order(orderId), [orderId]);
 
+  // Rebuilt server-side, so the customer can still send it on a later visit.
+  const whatsapp = useAsync(
+    () =>
+      order?.paymentMethod === 'WHATSAPP'
+        ? api.orderWhatsapp(orderId).then((r) => r.url)
+        : Promise.resolve(null),
+    [orderId, order?.paymentMethod],
+  );
+
   // PayHere confirms server-to-server, so the status can lag the redirect by a
   // moment. Re-check a few times before telling the customer anything final.
+  const toast = useToast();
+  const [cancelling, setCancelling] = useState(false);
   const [checks, setChecks] = useState(0);
   const awaitingPayment = justPaid && order?.status === 'PENDING' && checks < 5;
 
@@ -80,6 +92,27 @@ export default function OrderDetail() {
           {STATUS_LABEL[order.status]}
         </span>
       </div>
+
+      {whatsapp.data && order.status === 'PENDING' && (
+        <div className="card card-pad wa-panel" style={{ marginBottom: 24 }}>
+          <div className="grow">
+            <strong>One step left — send us your order</strong>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              Your order is saved and the stock is reserved. Tap below to open
+              WhatsApp with the details filled in, then press send so our team
+              can confirm it.
+            </p>
+          </div>
+          <a
+            className="btn btn-lg"
+            href={whatsapp.data}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <WhatsAppIcon /> Send on WhatsApp
+          </a>
+        </div>
+      )}
 
       <div className="split">
         <div className="stack" style={{ '--gap': '22px' } as CSSProperties}>
@@ -189,6 +222,36 @@ export default function OrderDetail() {
               )}
             </dl>
           </div>
+
+          {order.status === 'PENDING' && (
+            <div className="card card-pad">
+              <h3 style={{ marginBottom: 10 }}>Changed your mind?</h3>
+              <p className="small muted" style={{ marginBottom: 14 }}>
+                You can cancel while the order is still pending. The pieces go
+                straight back into stock. Once it is confirmed or shipped you
+                will need to contact us.
+              </p>
+              <button
+                className="btn btn-danger btn-block"
+                disabled={cancelling}
+                onClick={async () => {
+                  if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+                  setCancelling(true);
+                  try {
+                    await api.cancelOrder(orderId);
+                    toast.push('Order cancelled and stock released.', 'ok');
+                    reload();
+                  } catch (e) {
+                    toast.push(errorMessage(e), 'error');
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? <span className="spinner" /> : 'Cancel this order'}
+              </button>
+            </div>
+          )}
 
           <Link to="/account/orders" className="btn btn-outline btn-block">
             Back to my orders

@@ -15,6 +15,9 @@ const SORTS = [
 ] as const;
 
 /** Keeps the size chips in a sensible order rather than alphabetical. */
+/** How recent a product must be to count as "New in". */
+const NEW_WINDOW_DAYS = 30;
+
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const sizeRank = (s: string) => {
   const i = SIZE_ORDER.indexOf(s);
@@ -32,6 +35,7 @@ export default function Catalog() {
   const minPrice = params.get('minPrice') ?? '';
   const maxPrice = params.get('maxPrice') ?? '';
   const urlSearch = params.get('search') ?? '';
+  const onlyNew = params.has('new');
 
   // The search box stays local and feeds the URL after a pause.
   const [searchBox, setSearchBox] = useState(urlSearch);
@@ -88,14 +92,23 @@ export default function Catalog() {
     return [...set].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b));
   }, [facets.data]);
 
-  const activeCount = [categoryId, size, minPrice, maxPrice, urlSearch].filter(Boolean).length;
-  const list = products.data ?? [];
+  const activeCount =
+    [categoryId, size, minPrice, maxPrice, urlSearch].filter(Boolean).length +
+    (onlyNew ? 1 : 0);
+
+  // The API has no "recently added" filter, so this one is applied here.
+  const list = useMemo(() => {
+    const all = products.data ?? [];
+    if (!onlyNew) return all;
+    const cutoff = Date.now() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    return all.filter((p) => new Date(p.createdAt).getTime() >= cutoff);
+  }, [products.data, onlyNew]);
 
   return (
     <div className="wrap page">
       <div className="page-head">
-        <span className="eyebrow">Collection</span>
-        <h1>Shop all</h1>
+        <span className="eyebrow">{onlyNew ? 'Just landed' : 'Collection'}</span>
+        <h1>{onlyNew ? 'New in' : 'Shop all'}</h1>
         <p className="lede">
           {facets.data ? `${facets.data.length} pieces in the current season.` : ' '}
         </p>
@@ -110,6 +123,18 @@ export default function Catalog() {
                 Clear all
               </button>
             )}
+          </div>
+
+          <div className="filter-group">
+            <h4>Availability</h4>
+            <label className="filter-opt">
+              <input
+                type="checkbox"
+                checked={onlyNew}
+                onChange={(e) => patch('new', e.target.checked ? '1' : '')}
+              />
+              New in — last {NEW_WINDOW_DAYS} days
+            </label>
           </div>
 
           <div className="filter-group">

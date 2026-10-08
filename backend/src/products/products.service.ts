@@ -36,6 +36,9 @@ export class ProductsService {
     if (q.sort === 'price_asc') qb.orderBy('p.price', 'ASC');
     else if (q.sort === 'price_desc') qb.orderBy('p.price', 'DESC');
     else qb.orderBy('p.createdAt', 'DESC');
+    // Seeded rows share a createdAt and prices repeat, so without a unique
+    // tiebreaker Postgres may return ties in a different order each query.
+    qb.addOrderBy('p.id', 'DESC');
 
     return qb.getMany();
   }
