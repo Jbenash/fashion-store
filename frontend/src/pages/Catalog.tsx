@@ -5,6 +5,7 @@ import { useAsync, useDebounced } from '../lib/useAsync';
 import ProductCard from '../components/ProductCard';
 import { Empty, ErrorBox, ProductGridSkeleton } from '../components/States';
 import { SearchIcon } from '../components/Icons';
+import { sizeRank } from '../lib/format';
 import type { ProductQuery } from '../lib/types';
 import type { CSSProperties } from 'react';
 
@@ -14,15 +15,8 @@ const SORTS = [
   { value: 'price_desc', label: 'Price: high to low' },
 ] as const;
 
-/** Keeps the size chips in a sensible order rather than alphabetical. */
 /** How recent a product must be to count as "New in". */
 const NEW_WINDOW_DAYS = 30;
-
-const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-const sizeRank = (s: string) => {
-  const i = SIZE_ORDER.indexOf(s);
-  return i === -1 ? SIZE_ORDER.length : i;
-};
 
 export default function Catalog() {
   const [params, setParams] = useSearchParams();

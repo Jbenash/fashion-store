@@ -3,13 +3,31 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { errorMessage } from '../lib/useAsync';
 import PasswordInput from '../components/PasswordInput';
+import type { Role } from '../lib/types';
 import type { CSSProperties, FormEvent } from 'react';
+
+/**
+ * Where to send someone after signing in.
+ *
+ * A page they explicitly asked for wins, so a guard that interrupted them
+ * hands them back. The exception is an admin bounced off a customer account
+ * page: that redirect usually comes from an expired session behind the header's
+ * account link, not from any intent to read their own order history, and
+ * landing there instead of the dashboard reads as a broken login.
+ */
+function landingFor(role: Role, requested: string | null): string {
+  const home = role === 'ADMIN' ? '/admin' : '/';
+  if (!requested || requested === '/') return home;
+  if (role === 'ADMIN' && requested.startsWith('/account')) return '/admin';
+  return requested;
+}
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
+  // Only set when a guard bounced the user off a page they asked for.
+  const requested = (location.state as { from?: string } | null)?.from ?? null;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +40,7 @@ export default function Login() {
     setBusy(true);
     try {
       const user = await login(email.trim(), password);
-      navigate(user.role === 'ADMIN' && from === '/' ? '/admin' : from, { replace: true });
+      navigate(landingFor(user.role, requested), { replace: true });
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

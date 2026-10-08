@@ -48,6 +48,28 @@ export const priceRange = (p: Product) => {
   return `${formatPrice(p.bulkPrice!)} – ${formatPrice(p.price)}`;
 };
 
+/**
+ * The sizes the shop stocks, in the order a customer expects to see them.
+ * Shared by the catalog filter and the admin product form so a size picked in
+ * one always sorts correctly in the other.
+ */
+export const SIZE_OPTIONS = [
+  'XS',
+  'S',
+  'M',
+  'L',
+  'XL',
+  'XXL',
+  'XXXL',
+  'Free Size',
+] as const;
+
+/** Sorts known sizes by the list above; anything custom goes last, alphabetically. */
+export function sizeRank(size: string): number {
+  const i = (SIZE_OPTIONS as readonly string[]).indexOf(size);
+  return i === -1 ? SIZE_OPTIONS.length : i;
+}
+
 /** Named colours → a swatch. Unknown names fall back to a neutral chip. */
 const SWATCHES: Record<string, string> = {
   black: '#1c1917',

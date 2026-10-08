@@ -6,13 +6,18 @@ import { uploadImage, validateImage } from '../../lib/cloudinary';
 import { useToast } from '../../store/toast';
 import { Loading } from '../../components/States';
 import { TrashIcon } from '../../components/Icons';
-import { PLACEHOLDER_IMG } from '../../lib/format';
+import { PLACEHOLDER_IMG, SIZE_OPTIONS } from '../../lib/format';
 import type { ProductInput, VariantInput } from '../../lib/types';
 import type { CSSProperties, FormEvent } from 'react';
+
+/** Sentinel for the size dropdown's escape hatch. */
+const CUSTOM_SIZE = '__custom__';
 
 interface Row extends VariantInput {
   /** Rows already saved cannot be removed — orders reference them. */
   persisted: boolean;
+  /** True when this row types its size instead of picking from the list. */
+  custom: boolean;
   key: string;
 }
 
@@ -22,6 +27,7 @@ const emptyRow = (): Row => ({
   colour: '',
   stock: 0,
   persisted: false,
+  custom: false,
 });
 
 export default function ProductForm() {
@@ -77,6 +83,9 @@ export default function ProductForm() {
         colour: v.colour,
         stock: v.stock,
         persisted: true,
+        // A stored size outside the standard list still has to show, so such a
+        // row opens in free-text mode.
+        custom: !(SIZE_OPTIONS as readonly string[]).includes(v.size),
       })),
     );
   }, [existing.data]);
@@ -400,14 +409,48 @@ export default function ProductForm() {
                   onChange={(e) => setRow(r.key, { colour: e.target.value })}
                   aria-label="Colour"
                 />
-                <input
-                  className="input"
-                  placeholder="Size"
-                  value={r.size}
-                  disabled={r.persisted}
-                  onChange={(e) => setRow(r.key, { size: e.target.value })}
-                  aria-label="Size"
-                />
+                {r.custom ? (
+                  <div className="size-custom">
+                    <input
+                      className="input"
+                      placeholder="Size"
+                      value={r.size}
+                      disabled={r.persisted}
+                      onChange={(e) => setRow(r.key, { size: e.target.value })}
+                      aria-label="Size"
+                      autoFocus
+                    />
+                    {!r.persisted && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setRow(r.key, { custom: false, size: '' })}
+                      >
+                        Use list
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <select
+                    className="select"
+                    value={r.size}
+                    disabled={r.persisted}
+                    onChange={(e) =>
+                      e.target.value === CUSTOM_SIZE
+                        ? setRow(r.key, { custom: true, size: '' })
+                        : setRow(r.key, { size: e.target.value })
+                    }
+                    aria-label="Size"
+                  >
+                    <option value="">Size…</option>
+                    {SIZE_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_SIZE}>Other…</option>
+                  </select>
+                )}
                 <input
                   className="input"
                   type="number"

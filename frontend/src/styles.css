@@ -1277,6 +1277,10 @@ h3 { font-size: 1.15rem; }
 
 .variant-rows { display: grid; gap: 10px; }
 
+/* Free-text size plus its "back to the list" escape hatch. */
+.size-custom { display: flex; gap: 6px; align-items: center; }
+.size-custom .input { min-width: 0; }
+
 .variant-row {
   display: grid;
   grid-template-columns: 1fr 1fr 110px auto;
