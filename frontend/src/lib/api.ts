@@ -13,13 +13,24 @@ import type {
 } from './types';
 
 /**
- * Base URL of the API, including its /api prefix.
- * Trailing slashes are stripped because every path below starts with one, and
- * `https://host//products` is a different route to `https://host/products`.
+ * Base URL of the API.
+ *
+ * Normalised in two ways, because both mistakes are easy to make when pasting
+ * a host into a deployment dashboard:
+ *   - trailing slashes are stripped, since every path below starts with one and
+ *     `https://host//products` is a different route to `https://host/products`;
+ *   - the `/api` prefix is appended when absent. The server sets it
+ *     unconditionally via `setGlobalPrefix('api')` in main.ts, so a base URL
+ *     without it can only ever 404.
  */
-const BASE_URL: string = (
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
-).replace(/\/+$/, '');
+function resolveBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  return /\/api$/.test(trimmed) ? trimmed : `${trimmed}/api`;
+}
+
+const BASE_URL: string = resolveBaseUrl(
+  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
+);
 
 const TOKEN_KEY = 'atelier.token';
 
