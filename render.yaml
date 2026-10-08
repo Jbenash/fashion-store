@@ -23,8 +23,13 @@ services:
       # Also switches main.ts to the strict CORS allowlist.
       - key: NODE_ENV
         value: production
+      # Must stay on the npm major that generated package-lock.json (Node 24
+      # ships npm 11). Node 22 ships npm 10, which resolves peer dependencies
+      # differently: vite-tsconfig-paths -> tsconfck peer-requires typescript@^5
+      # while this project is on 6, so npm 10 demands typescript@5.9.3 and
+      # fails `npm ci` with "Missing: typescript@5.9.3 from lock file".
       - key: NODE_VERSION
-        value: "22"
+        value: "24"
 
       # Neon connection string. Use the -pooler host.
       - key: DATABASE_URL

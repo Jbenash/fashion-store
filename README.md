@@ -140,6 +140,22 @@ once Render assigns it. Leave `FRONTEND_URL` until step 2.
 On the free plan the service sleeps after about 15 minutes idle, so the first
 request afterwards takes roughly 50 seconds.
 
+**`NODE_VERSION` is not cosmetic.** It must stay on the npm major that generated
+`package-lock.json`. Node 24 ships npm 11; Node 22 ships npm 10, which resolves
+peer dependencies differently — `vite-tsconfig-paths` pulls in `tsconfck`, whose
+peer range is `typescript@^5` while this project is on 6 — and fails the build
+with:
+
+```
+npm ci can only install packages when your package.json and package-lock.json are in sync.
+Missing: typescript@5.9.3 from lock file
+```
+
+If a future npm rejects the lock again, either regenerate it with that npm
+(`npm install`, commit the result) or relax the build command to
+`npm install --include=dev && npm run build`, which tolerates drift at the cost
+of reproducible builds.
+
 ### 2. SPA on Vercel
 
 Import the repo and set **Root Directory** to `frontend`; `frontend/vercel.json`
