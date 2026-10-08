@@ -10,6 +10,7 @@ import { ProductsModule } from './products/products.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { SeedModule } from './seed/seed.module.js';
 import { UploadsModule } from './uploads/uploads.module.js';
+import { HealthController } from './health.controller.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { UploadsModule } from './uploads/uploads.module.js';
     //feature modules
     UsersModule, AuthModule, CategoriesModule, ProductsModule, OrdersModule, SeedModule, UploadsModule,
   ],
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

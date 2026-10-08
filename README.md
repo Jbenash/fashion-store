@@ -110,6 +110,83 @@ Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` to reach the admin panel at
 
 ---
 
+## 2b. Deployment
+
+The API runs on **Render** and the SPA on **Vercel**. The API must be publicly
+reachable over HTTPS, because PayHere refuses to send its `notify_url` callback
+to plain HTTP or to `localhost` — which is why the paid flow cannot be completed
+on a dev machine without a tunnel.
+
+The two URLs reference each other, so deploy in this order.
+
+### 1. API on Render
+
+`render.yaml` in the repo root describes the service. In Render choose
+**New > Blueprint**, point it at this repo, and fill in the values it prompts
+for (everything marked `sync: false` is a secret and is deliberately not stored
+in git).
+
+Two details that matter:
+
+- The build command is `npm ci --include=dev && npm run build`. `@nestjs/cli`
+  is a devDependency, so with `NODE_ENV=production` set a plain `npm ci` would
+  skip it and `nest build` would fail.
+- `NODE_ENV=production` also switches `main.ts` from the permissive
+  development CORS rule to the strict allowlist.
+
+Set `BACKEND_URL` to the service's own `https://<name>.onrender.com` address
+once Render assigns it. Leave `FRONTEND_URL` until step 2.
+
+On the free plan the service sleeps after about 15 minutes idle, so the first
+request afterwards takes roughly 50 seconds.
+
+### 2. SPA on Vercel
+
+Import the repo and set **Root Directory** to `frontend`; `frontend/vercel.json`
+supplies the rest. Add one environment variable:
+
+```
+VITE_API_URL=https://<your-render-service>.onrender.com/api
+```
+
+Vite inlines this at build time, so changing it later needs a redeploy, not just
+a restart.
+
+The rewrite in `vercel.json` is what makes client-side routing work: without it
+a refresh on `/products/3` would 404, because no such file exists on disk.
+
+### 3. Point them at each other
+
+Back in Render, set `FRONTEND_URL` to the exact Vercel origin — no trailing
+slash — and redeploy. That single value drives both the CORS allowlist and
+PayHere's return/cancel URLs.
+
+Vercel gives every preview deployment its own hostname, and those are not the
+production origin, so they will fail CORS. Add them to `CORS_EXTRA_ORIGINS`
+(comma separated) if you need previews to talk to the API.
+
+### 4. PayHere sandbox
+
+Register a sandbox merchant at
+[sandbox.payhere.lk](https://sandbox.payhere.lk/merchant/sign-up) — it is a
+separate account from live and needs no bank details. Under
+**Settings > Domains & Credentials** add your Vercel domain, then copy the
+Merchant ID and Secret into Render.
+
+Test cards (any valid-looking name, CVV and future expiry):
+
+| Card | Number |
+|---|---|
+| Visa | `4916217501611292` |
+| MasterCard | `5307732125531191` |
+| AMEX | `346781005510225` |
+
+The portal also lists cards that force specific declines — insufficient funds,
+limit exceeded, do not honor, network error — which exercise the failure path in
+`handlePayhereNotify`.
+
+---
+
 ## 3. Architecture
 
 ```

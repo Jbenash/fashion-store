@@ -1,0 +1,68 @@
+# Render Blueprint for the NestJS API.
+# Create it from the Render dashboard: New > Blueprint, point at this repo.
+# Every secret is marked `sync: false`, so Render prompts for it instead of
+# reading it from this file — nothing sensitive belongs in version control.
+services:
+  - type: web
+    name: fashion-store-api
+    runtime: node
+    plan: free
+    rootDir: backend
+
+    # `--include=dev` is required: @nestjs/cli is a devDependency, and with
+    # NODE_ENV=production set below, a plain `npm ci` would skip it and
+    # `nest build` would fail.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+
+    # HealthController; deliberately does not touch the database, so a brief
+    # Neon hiccup cannot trigger a restart loop.
+    healthCheckPath: /api/health
+
+    envVars:
+      # Also switches main.ts to the strict CORS allowlist.
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+
+      # Neon connection string. Use the -pooler host.
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+
+      - key: JWT_SECRET
+        sync: false
+
+      # Must be the exact Vercel origin, no trailing slash.
+      - key: FRONTEND_URL
+        sync: false
+      # This service's own https://<name>.onrender.com URL. PayHere builds
+      # notify_url from it, so it must be public HTTPS.
+      - key: BACKEND_URL
+        sync: false
+
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      - key: PAYHERE_MERCHANT_ID
+        sync: false
+      - key: PAYHERE_MERCHANT_SECRET
+        sync: false
+      - key: PAYHERE_CHECKOUT_URL
+        value: https://sandbox.payhere.lk/pay/checkout
+
+      - key: WHATSAPP_NUMBER
+        sync: false
+
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: fashion-store/products
